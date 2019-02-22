@@ -1,20 +1,50 @@
 # -*- coding: UTF-8 -*-
 __author__ = 'kuzmenko-pavel'
 import os
-import time
-from shutil import move
-from collections import defaultdict
 import re
-import redis
+import time
+from collections import defaultdict
+from datetime import datetime
+from shutil import move
 
+import redis
 from pyramid_celery import celery_app as app
 
 # from retargeting_feed_generator.helper import redirect_link, image_link, price, text_normalize
 
-tpl_xml_start = ''''''
+tpl_xml_start = '''
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE yml_catalog SYSTEM "shops.dtd">
+<yml_catalog date="{date}">
+<shop>
+<name>{login}</name>
+<company>{login}</company>
+<url>https://yottos.com/</url>
+<email>admin@yottos.com</email>
+<currencies>
+</currencies>
+<categories>
+</categories>
+<offers>
+'''
 
-tpl_xml_offer = ''''''
-tpl_xml_end = ''''''
+tpl_xml_offer = '''
+<offer id='{offer_id}'>
+<name>{name}</name>
+<url>{url}</url>
+<price>{price}</price>
+<currencyId>UAH</currencyId>
+<picture>{picture}</picture>
+<logo>{logo}</logo>
+<description>{description}</description>
+<recommended>{recommended}</recommended>
+</offer>
+'''
+tpl_xml_end = '''
+</offers>
+</shop>
+</yml_catalog>
+'''
 
 
 @app.task(ignore_result=True)
@@ -26,55 +56,92 @@ def check_feed():
         SELECT M.UserID
           ,M.MarketID
           ,U.Login
-      FROM [Adload].[dbo].[Market] as M
-      INNER JOIN [Adload].[dbo].[Users] as U ON U.UserID = M.UserID
+      FROM Market as M
+      INNER JOIN Users as U ON U.UserID = M.UserID
       where M.ExportLink not like '%yottos.com%'
     ''')
     for adv in result:
         user_id = adv[0]
         market_id = adv[1]
         login = re.sub('[^0-9a-zA-Z]+', '_', adv[2])
-        data[(user_id, login)].append(market_id)
+        data[(user_id, login)].append("'%s'" % market_id)
     result.close()
     dbsession.commit()
     for key, value in data.items():
-        create_feed(key[0], key[1], value)
+        create_feed.delay(key[0], key[1], value)
     print('STOP RECREATE FEED')
 
 
 @app.task(ignore_result=True)
 def create_feed(user_id, login, market_ids):
     print('START CREATE FEED %s' % user_id)
+    line = 0
     ids = []
     r = redis.Redis(host='srv-13.yottos.com', port=6379, db=10)
-    for key in r.scan_iter(match='%s:*' % user_id):
-        of_id = key.split(':')[1]
-        c = r.get(key)
-        ids.append((of_id, c))
+    exists = r.exists('exists::%s' % user_id)
+    if exists:
+        ids = [("897067513", 3), ("504003601", 3), ("884461118", 2), ("551505285", 2), ("796680458", 2),
+               ("859633020", 2), ("874703926", 2), ("821286416", 2), ("347534824", 2), ("594976621", 2),
+               ("730855445", 2)]
+        # for key in r.scan_iter(match='%s::*' % user_id, count=10):
+        #     tmp = str(key).split('::')
+        #     if len(tmp) == 2:
+        #         of_id = tmp[1]
+        #         c = int(r.get(key))
+        #         if c > 1:
+        #             ids.append((of_id, c))
+        #
+        #     if len(ids) > 10:
+        #         break
 
     ids.sort(key=lambda x: x[1], reverse=True)
-    line = 0
     if ids:
-        print(ids[:15])
+        print('=' * 20)
+        print(login, ids[:15])
+        print('=' * 20)
         dir_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'static/xml')
         file_path = os.path.join(dir_path, "%s::%s.xml" % (login, user_id))
         temp_file = file_path + '.' + str(int(time.time()))
         with open(temp_file, 'w', encoding='utf-8', errors='xmlcharrefreplace') as f:
-            f.write(tpl_xml_start)
+            data = {
+                'login': login,
+                'date': datetime.now().strftime('%Y-%m-%d %H:%M')
+            }
+            f.write(tpl_xml_start.format(**data))
             f.flush()
-            result = []
-            for offer in result:
-                data = ''
-                try:
-                    data = tpl_xml_offer % ()
-                except Exception as e:
-                    print(e)
-                else:
-                    f.write(data)
-                line += 1
-                if line % 1000 == 0:
-                    print('Writen %d offers' % line)
-                    f.flush()
+            for item in ids:
+                dbsession = app.conf['PYRAMID_REGISTRY']['dbsession_factory']()
+                result = dbsession.execute('''
+                SELECT [Title]
+                      ,[Descript]
+                      ,[Price]
+                      ,[ExternalURL]
+                      ,[ImgURL]
+                      ,[Logo]
+                      ,[Recommended]
+                  FROM Lot
+                  WHERE Auther = '%s'
+                  and MarketID in (%s)
+                  and RetargetingID= '%s'
+                ''' % (user_id, ','.join(market_ids), item[0]))
+                for offer in result:
+                    data = {
+                        'offer_id': item[0],
+                        'name': offer[0],
+                        'description': offer[1],
+                        'price': offer[2],
+                        'url': offer[3],
+                        'picture': offer[4],
+                        'logo': offer[5],
+                        'recommended': offer[6]
+                    }
+                    f.write(tpl_xml_offer.format(**data))
+                    line += 1
+                    if line % 1000 == 0:
+                        print('Writen %d offers' % line)
+                        f.flush()
+                result.close()
+                dbsession.commit()
             f.flush()
             f.write(tpl_xml_end)
             f.flush()
