@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="{{ request.locale_name }}">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="">
+    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" media="screen" href="{{ request.static_url('retargeting_feed_generator:static/datatables.min.css') }}">
+    <script type="text/javascript" src="{{ request.static_url('retargeting_feed_generator:static/jQuery-3.3.1/jquery-3.3.1.min.js') }}"></script>
+    <script type="text/javascript" src="{{ request.static_url('retargeting_feed_generator:static/datatables.min.js') }}"></script>
+    {% block head %}
+    {% endblock %}
+</head>
+<body>
+{% block content %}{% endblock %}
+</body>
+</html>

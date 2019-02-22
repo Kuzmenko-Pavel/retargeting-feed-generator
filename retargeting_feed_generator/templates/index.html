@@ -1,0 +1,26 @@
+{% extends "main.html" %}
+{% block content %}
+<table id="feeds" class="display">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Account</th>
+                <th>Export Link</th>
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+                <th>Name</th>
+                <th>Account</th>
+                <th>Export Link</th>
+            </tr>
+        </tfoot>
+    </table>
+<script>
+    $(document).ready(function() {
+    $('#feeds').DataTable( {
+        "ajax": "{{'feeds'|route_path_filter}}"
+        } );
+    } );
+</script>
+{% endblock content %}

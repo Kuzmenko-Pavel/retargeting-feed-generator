@@ -1,0 +1,3 @@
+[run]
+source = retargeting_feed_generator
+omit = retargeting_feed_generator/test*
