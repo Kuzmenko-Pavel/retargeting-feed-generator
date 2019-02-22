@@ -80,25 +80,19 @@ def create_feed(user_id, login, market_ids):
     r = redis.Redis(host='srv-13.yottos.com', port=6379, db=10)
     exists = r.exists('exists::%s' % user_id)
     if exists:
-        ids = [("897067513", 3), ("504003601", 3), ("884461118", 2), ("551505285", 2), ("796680458", 2),
-               ("859633020", 2), ("874703926", 2), ("821286416", 2), ("347534824", 2), ("594976621", 2),
-               ("730855445", 2)]
-        # for key in r.scan_iter(match='%s::*' % user_id, count=10):
-        #     tmp = str(key).split('::')
-        #     if len(tmp) == 2:
-        #         of_id = tmp[1]
-        #         c = int(r.get(key))
-        #         if c > 1:
-        #             ids.append((of_id, c))
-        #
-        #     if len(ids) > 10:
-        #         break
+        for key in r.scan_iter(match='%s::*' % user_id, count=10):
+            tmp = key.split(b'::')
+            if len(tmp) == 2:
+                of_id = tmp[1]
+                c = int(r.get(key))
+                if c > 1:
+                    ids.append((of_id, c))
+
+            if len(ids) > 10:
+                break
 
     ids.sort(key=lambda x: x[1], reverse=True)
     if ids:
-        print('=' * 20)
-        print(login, ids[:15])
-        print('=' * 20)
         dir_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'static/xml')
         file_path = os.path.join(dir_path, "%s::%s.xml" % (login, user_id))
         temp_file = file_path + '.' + str(int(time.time()))
