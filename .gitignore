@@ -226,3 +226,6 @@ tags
 
 # .nfs files are created when an open file is removed but is still being accessed
 .nfs*
+
+
+/retargeting_feed_generator/static/xml/*.xml
