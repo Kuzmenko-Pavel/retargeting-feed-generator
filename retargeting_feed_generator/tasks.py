@@ -83,7 +83,7 @@ def create_feed(user_id, login, market_ids):
         for key in r.scan_iter(match='%s::*' % user_id, count=10):
             tmp = key.split(b'::')
             if len(tmp) == 2:
-                of_id = tmp[1]
+                of_id = tmp[1].decode('utf-8')
                 c = int(r.get(key))
                 if c > 1:
                     ids.append((of_id, c))
