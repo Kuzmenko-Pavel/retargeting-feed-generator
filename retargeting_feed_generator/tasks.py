@@ -50,6 +50,14 @@ tpl_xml_end = '''
 @app.task(ignore_result=True)
 def check_feed():
     print('START RECREATE FEED')
+    dir_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'static/xml')
+    for the_file in os.listdir(dir_path):
+        file_path = os.path.join(dir_path, the_file)
+        try:
+            if os.path.isfile(file_path):
+                os.unlink(file_path)
+        except Exception as e:
+            print(e)
     data = defaultdict(lambda: list())
     dbsession = app.conf['PYRAMID_REGISTRY']['dbsession_factory']()
     result = dbsession.execute('''
@@ -80,16 +88,16 @@ def create_feed(user_id, login, market_ids):
     r = redis.Redis(host='srv-13.yottos.com', port=6379, db=10)
     exists = r.exists('exists::%s' % user_id)
     if exists:
-        for key in r.scan_iter(match='%s::*' % user_id, count=10):
+        for key in r.scan_iter(match='%s::*' % user_id, count=100):
             tmp = key.split(b'::')
             if len(tmp) == 2:
                 of_id = tmp[1].decode('utf-8')
                 c = int(r.get(key))
-                if c > 1:
+                if c > 0:
                     ids.append((of_id, c))
 
-            if len(ids) > 10:
-                break
+            # if len(ids) > 100:
+            #     break
 
     ids.sort(key=lambda x: x[1], reverse=True)
     if ids:
@@ -140,4 +148,6 @@ def create_feed(user_id, login, market_ids):
             f.write(tpl_xml_end)
             f.flush()
         move(temp_file, file_path)
+    r.connection_pool.disconnect()
+    del ids
     print('STOP CREATE FEED %s on %d offers' % (user_id, line))
