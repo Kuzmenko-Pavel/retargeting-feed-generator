@@ -92,7 +92,11 @@ def create_feed(user_id, login, market_ids):
             tmp = key.split(b'::')
             if len(tmp) == 2:
                 of_id = tmp[1].decode('utf-8')
-                c = int(r.get(key))
+                try:
+                    c = int(r.get(key))
+                except Exception as e:
+                    print(e)
+                    c = 0
                 if c > 0:
                     ids.append((of_id, c))
 
