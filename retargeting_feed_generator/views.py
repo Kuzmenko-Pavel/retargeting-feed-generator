@@ -45,7 +45,7 @@ def feeds(request):
     dir_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'static/xml')
     files = os.listdir(dir_path)
     for name in files:
-        if '.xml' in name:
+        if name.endswith('.xml'):
             name = name.replace('.xml', '')
             tmp = name.split('::')
             if len(tmp) == 2:
