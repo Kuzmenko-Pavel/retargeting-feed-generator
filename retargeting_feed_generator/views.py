@@ -6,12 +6,19 @@ from pyramid.response import FileResponse
 from pyramid.security import forget
 from pyramid.view import forbidden_view_config
 from pyramid.view import view_config
+from retargeting_feed_generator import tasks
 
 
 @view_config(route_name='index', renderer='templates/index.html', permission='view')
 def index(request):
     result = request.dbsession.execute('select 1')
     return {'project': result}
+
+
+@view_config(route_name='check_feed', renderer='json', permission='view')
+def check_feed(request):
+    tasks.check_feed.delay()
+    return {}
 
 
 @view_config(route_name='export', renderer='templates/xml.html', permission='view')
