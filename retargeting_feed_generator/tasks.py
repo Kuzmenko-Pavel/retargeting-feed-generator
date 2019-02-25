@@ -112,13 +112,13 @@ def create_feed(user_id, login, market_ids):
             for item in ids:
                 dbsession = app.conf['PYRAMID_REGISTRY']['dbsession_factory']()
                 result = dbsession.execute('''
-                SELECT [Title]
-                      ,[Descript]
-                      ,[Price]
-                      ,[ExternalURL]
-                      ,[ImgURL]
-                      ,[Logo]
-                      ,[Recommended]
+                SELECT TOP 1 [Title]
+                            ,[Descript]
+                            ,[Price]
+                            ,[ExternalURL]
+                            ,[ImgURL]
+                            ,[Logo]
+                            ,[Recommended]
                   FROM Lot
                   WHERE Auther = '%s'
                   and MarketID in (%s)
