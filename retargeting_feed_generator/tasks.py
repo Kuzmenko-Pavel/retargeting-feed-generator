@@ -10,7 +10,7 @@ from shutil import move
 import redis
 from pyramid_celery import celery_app as app
 
-# from retargeting_feed_generator.helper import redirect_link, image_link, price, text_normalize
+from retargeting_feed_generator.helper import image_link, price, text_normalize
 
 tpl_xml_start = '''<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE yml_catalog SYSTEM "shops.dtd">
@@ -127,12 +127,12 @@ def create_feed(user_id, login, market_ids):
                 for offer in result:
                     data = {
                         'offer_id': item[0],
-                        'name': offer[0],
-                        'description': offer[1],
-                        'price': offer[2],
+                        'name': text_normalize(offer[0]),
+                        'description': text_normalize(offer[1]),
+                        'price': price(offer[2]),
                         'url': offer[3],
-                        'picture': offer[4].split(',')[0].strip(),
-                        'logo': offer[5],
+                        'picture': image_link(offer[4]),
+                        'logo': image_link(offer[5]),
                         'recommended': offer[6]
                     }
                     f.write(tpl_xml_offer.format(**data))
