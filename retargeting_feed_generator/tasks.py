@@ -131,7 +131,7 @@ def create_feed(user_id, login, market_ids):
                         'description': offer[1],
                         'price': offer[2],
                         'url': offer[3],
-                        'picture': offer[4],
+                        'picture': offer[4].split(',')[0].strip(),
                         'logo': offer[5],
                         'recommended': offer[6]
                     }
