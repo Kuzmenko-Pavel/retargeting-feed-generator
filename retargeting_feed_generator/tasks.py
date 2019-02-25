@@ -123,7 +123,7 @@ def create_feed(user_id, login, market_ids):
                   FROM Lot
                   WHERE MarketID in (%s)
                   and RetargetingID= '%s'
-                ''' % (user_id, ','.join(market_ids), item[0]))
+                ''' % (','.join(market_ids), item[0]))
                 for offer in result:
                     data = {
                         'offer_id': item[0],
