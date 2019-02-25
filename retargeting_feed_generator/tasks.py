@@ -97,11 +97,8 @@ def create_feed(user_id, login, market_ids):
                 except Exception as e:
                     print(e)
                     c = 0
-                if c > 0:
+                if c > 1:
                     ids.append((of_id, c))
-
-            # if len(ids) > 100:
-            #     break
 
     ids.sort(key=lambda x: x[1], reverse=True)
     if ids:
@@ -143,9 +140,9 @@ def create_feed(user_id, login, market_ids):
                     }
                     f.write(tpl_xml_offer.format(**data))
                     line += 1
-                    if line % 1000 == 0:
-                        print('Writen %d offers' % line)
+                    if line > 100:
                         f.flush()
+                        break
                 result.close()
                 dbsession.commit()
             f.flush()
