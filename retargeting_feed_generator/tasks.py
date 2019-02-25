@@ -12,8 +12,7 @@ from pyramid_celery import celery_app as app
 
 # from retargeting_feed_generator.helper import redirect_link, image_link, price, text_normalize
 
-tpl_xml_start = '''
-<?xml version="1.0" encoding="utf-8"?>
+tpl_xml_start = '''<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE yml_catalog SYSTEM "shops.dtd">
 <yml_catalog date="{date}">
 <shop>
@@ -22,14 +21,15 @@ tpl_xml_start = '''
 <url>https://yottos.com/</url>
 <email>admin@yottos.com</email>
 <currencies>
+<currency id="UAH" rate="1"/>
 </currencies>
 <categories>
+<category id="1">Товары</category>
 </categories>
-<offers>
-'''
+<offers>'''
 
-tpl_xml_offer = '''
-<offer id='{offer_id}'>
+tpl_xml_offer = '''<offer id='{offer_id}'>
+<categoryId>1</categoryId>
 <name>{name}</name>
 <url>{url}</url>
 <price>{price}</price>
@@ -38,13 +38,10 @@ tpl_xml_offer = '''
 <logo>{logo}</logo>
 <description>{description}</description>
 <recommended>{recommended}</recommended>
-</offer>
-'''
-tpl_xml_end = '''
-</offers>
+</offer>'''
+tpl_xml_end = '''</offers>
 </shop>
-</yml_catalog>
-'''
+</yml_catalog>'''
 
 
 @app.task(ignore_result=True)
