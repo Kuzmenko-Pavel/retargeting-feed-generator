@@ -21,7 +21,7 @@ def check_feed(request):
     return {}
 
 
-@view_config(route_name='export', renderer='templates/xml.html', permission='view')
+@view_config(route_name='export', renderer='templates/xml.html')
 def export(request):
     request.response.content_type = 'application/xml'
     id = request.matchdict.get('id', '')
