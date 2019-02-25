@@ -16,6 +16,10 @@ def price(p):
     return '%s' % p
 
 
+def url(link):
+    return html.escape(link)
+
+
 def text_normalize(text):
     words = text.split()
     upper_words = [word for word in words if word.isupper()]

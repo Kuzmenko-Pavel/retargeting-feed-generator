@@ -10,7 +10,7 @@ from shutil import move
 import redis
 from pyramid_celery import celery_app as app
 
-from retargeting_feed_generator.helper import image_link, price, text_normalize
+from retargeting_feed_generator.helper import image_link, price, text_normalize, url
 
 tpl_xml_start = '''<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE yml_catalog SYSTEM "shops.dtd">
@@ -38,6 +38,7 @@ tpl_xml_offer = '''<offer id='{offer_id}'>
 <logo>{logo}</logo>
 <description>{description}</description>
 <recommended>{recommended}</recommended>
+<sale_count>{sale_count}</sale_count>
 </offer>'''
 tpl_xml_end = '''</offers>
 </shop>
@@ -94,7 +95,7 @@ def create_feed(user_id, login, market_ids):
                 except Exception as e:
                     print(e)
                     c = 0
-                if c > 1:
+                if c > 0:
                     ids.append((of_id, c))
 
     ids.sort(key=lambda x: x[1], reverse=True)
@@ -120,8 +121,7 @@ def create_feed(user_id, login, market_ids):
                             ,[Logo]
                             ,[Recommended]
                   FROM Lot
-                  WHERE Auther = '%s'
-                  and MarketID in (%s)
+                  WHERE MarketID in (%s)
                   and RetargetingID= '%s'
                 ''' % (user_id, ','.join(market_ids), item[0]))
                 for offer in result:
@@ -130,18 +130,19 @@ def create_feed(user_id, login, market_ids):
                         'name': text_normalize(offer[0]),
                         'description': text_normalize(offer[1]),
                         'price': price(offer[2]),
-                        'url': offer[3],
+                        'url': url(offer[3]),
                         'picture': image_link(offer[4]),
                         'logo': image_link(offer[5]),
-                        'recommended': offer[6]
+                        'recommended': offer[6],
+                        'sale_count': item[1]
                     }
                     f.write(tpl_xml_offer.format(**data))
                     line += 1
-                    if line > 100:
-                        f.flush()
-                        break
                 result.close()
                 dbsession.commit()
+                if line > 100:
+                    f.flush()
+                    break
             f.flush()
             f.write(tpl_xml_end)
             f.flush()
