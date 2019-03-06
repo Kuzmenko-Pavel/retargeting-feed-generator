@@ -12,6 +12,70 @@ from pyramid_celery import celery_app as app
 
 from retargeting_feed_generator.helper import image_link, price, text_normalize, url
 
+
+class HashDict(dict):
+    """
+    hashable dict implementation, suitable for use as a key into
+    other dicts.
+
+        >>> h1 = hashdict({"apples": 1, "bananas":2})
+        >>> h2 = hashdict({"bananas": 3, "mangoes": 5})
+        >>> h1+h2
+        hashdict(apples=1, bananas=3, mangoes=5)
+        >>> d1 = {}
+        >>> d1[h1] = "salad"
+        >>> d1[h1]
+        'salad'
+        >>> d1[h2]
+        Traceback (most recent call last):
+        ...
+        KeyError: hashdict(bananas=3, mangoes=5)
+
+    based on answers from
+       http://stackoverflow.com/questions/1151658/python-hashable-dicts
+
+    """
+
+    def __key(self):
+        return tuple(sorted(self.items()))
+
+    def __repr__(self):
+        return "{0}({1})".format(self.__class__.__name__,
+                                 ", ".join("{0}={1}".format(
+                                     str(i[0]), repr(i[1])) for i in self.__key()))
+
+    def __hash__(self):
+        return hash(self.__key())
+
+    def __setitem__(self, key, value):
+        raise TypeError("{0} does not support item assignment"
+                        .format(self.__class__.__name__))
+
+    def __delitem__(self, key):
+        raise TypeError("{0} does not support item assignment"
+                        .format(self.__class__.__name__))
+
+    def clear(self):
+        raise TypeError("{0} does not support item assignment"
+                        .format(self.__class__.__name__))
+
+    def pop(self, *args, **kwargs):
+        raise TypeError("{0} does not support item assignment"
+                        .format(self.__class__.__name__))
+
+    def popitem(self, *args, **kwargs):
+        raise TypeError("{0} does not support item assignment"
+                        .format(self.__class__.__name__))
+
+    def setdefault(self, *args, **kwargs):
+        raise TypeError("{0} does not support item assignment"
+                        .format(self.__class__.__name__))
+
+    def update(self, *args, **kwargs):
+        raise TypeError("{0} does not support item assignment"
+                        .format(self.__class__.__name__))
+
+
 tpl_xml_start = '''<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE yml_catalog SYSTEM "shops.dtd">
 <yml_catalog date="{date}">
@@ -84,7 +148,7 @@ def check_feed():
 def create_feed(user_id, login, markets):
     print('START CREATE FEED %s' % user_id)
     ids = []
-    data = defaultdict(lambda:{'markets': [], 'offers': []})
+    data = defaultdict(lambda: {'markets': set(), 'offers': set()})
     r = redis.Redis(host='srv-13.yottos.com', port=6379, db=10)
     exists = r.exists('exists::%s' % user_id)
     if exists:
@@ -105,15 +169,15 @@ def create_feed(user_id, login, markets):
     ids.sort(key=lambda x: x[1], reverse=True)
     if ids:
         for market_id, title in markets:
-            data['ALL']['markets'].append(market_id.upper())
-            data[title]['markets'].append(market_id.upper())
+            data['ALL']['markets'].add(market_id.upper())
+            data[title]['markets'].add(market_id.upper())
         if len(data['ALL']['markets']) > 0:
             for item in ids:
                 dbsession = app.conf['PYRAMID_REGISTRY']['dbsession_factory']()
-                market_ids = data['ALL']['markets']
+                market_ids = list(data['ALL']['markets'])
                 market_by_id = {str(x).upper(): str(y) for x, y in markets}
                 result = dbsession.execute('''
-                SELECT TOP 1 [Title]
+                SELECT TOP 20 [Title]
                             ,[Descript]
                             ,[Price]
                             ,[ExternalURL]
@@ -126,7 +190,7 @@ def create_feed(user_id, login, markets):
                   and RetargetingID= '%s'
                 ''' % (','.join(market_ids), item[0]))
                 for offer in result:
-                    lot = {
+                    lot = HashDict({
                         'offer_id': item[0],
                         'name': text_normalize(offer[0]),
                         'description': text_normalize(offer[1]),
@@ -136,11 +200,11 @@ def create_feed(user_id, login, markets):
                         'logo': image_link(offer[5]),
                         'recommended': offer[6],
                         'sale_count': item[1]
-                    }
-                    data['ALL']['offers'].append(lot)
+                    })
+                    data['ALL']['offers'].add(lot)
                     market_title = market_by_id.get(str("'%s'" % offer[7]).upper())
                     if market_title:
-                        data[market_title]['offers'].append(lot)
+                        data[market_title]['offers'].add(lot)
                 result.close()
                 dbsession.commit()
     for k, v in data.items():

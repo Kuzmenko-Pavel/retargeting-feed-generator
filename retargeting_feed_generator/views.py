@@ -48,9 +48,10 @@ def feeds(request):
         if name.endswith('.xml'):
             name = name.replace('.xml', '')
             tmp = name.split('::')
-            if len(tmp) == 2:
+            if len(tmp) == 3:
                 data.append((tmp[1],
                              tmp[0],
+                             tmp[2],
                              "<a href='%s' target='_blank''>File Export</a>" % request.route_url('export', id=name)
                              ))
     return {
