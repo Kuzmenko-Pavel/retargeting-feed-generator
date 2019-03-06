@@ -163,8 +163,6 @@ def create_feed(user_id, login, markets):
                     c = 0
                 if c > 0:
                     ids.append((of_id, c))
-            if len(ids) > 100:
-                break
 
     ids.sort(key=lambda x: x[1], reverse=True)
     if ids:
