@@ -101,7 +101,6 @@ tpl_xml_offer = '''<offer id='{offer_id}'>
 <picture>{picture}</picture>
 <logo>{logo}</logo>
 <description>{description}</description>
-<recommended>{recommended}</recommended>
 <sale_count>{sale_count}</sale_count>
 </offer>'''
 tpl_xml_end = '''</offers>
@@ -181,7 +180,6 @@ def create_feed(user_id, login, markets):
                             ,[ExternalURL]
                             ,[ImgURL]
                             ,[Logo]
-                            ,[Recommended]
                             ,[MarketID]
                   FROM Lot
                   WHERE MarketID in (%s)
@@ -196,11 +194,10 @@ def create_feed(user_id, login, markets):
                         'url': url(offer[3]),
                         'picture': image_link(offer[4]),
                         'logo': image_link(offer[5]),
-                        'recommended': offer[6],
                         'sale_count': item[1]
                     })
                     data['ALL']['offers'].add(lot)
-                    market_title = market_by_id.get(str("'%s'" % offer[7]).upper())
+                    market_title = market_by_id.get(str("'%s'" % offer[6]).upper())
                     if market_title:
                         data[market_title]['offers'].add(lot)
                 result.close()
