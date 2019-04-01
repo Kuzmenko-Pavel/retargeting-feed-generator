@@ -214,7 +214,7 @@ def create_feed(user_id, login, markets):
             }
             f.write(tpl_xml_start.format(**template_data))
             f.flush()
-            offers = v.get('offers', [])
+            offers = list(v.get('offers', []))
             offers.sort(key=lambda x: int(x['sale_count']), reverse=True)
             for item in offers:
                 f.write(tpl_xml_offer.format(**item))
