@@ -197,7 +197,7 @@ def create_feed(user_id, login, markets):
                 ''' % (','.join(market_ids), item[0]))
                 for offer in result:
                     link = offer[3]
-                    if market_id in ['21D9F499-29B8-4BCD-918E-FE1B7997C33D']:
+                    if any(market_id in ['21D9F499-29B8-4BCD-918E-FE1B7997C33D'] for market_id in market_ids):
                         link = prom(link)
                     link = url(link)
                     lot = HashDict({
