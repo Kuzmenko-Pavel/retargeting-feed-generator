@@ -14,6 +14,9 @@ from pyramid_celery import celery_app as app
 from retargeting_feed_generator.helper import image_link, price, text_normalize, url
 
 
+prom_market_id = ['21D9F499-29B8-4BCD-918E-FE1B7997C33D']
+
+
 class HashDict(dict):
     """
     hashable dict implementation, suitable for use as a key into
@@ -197,7 +200,7 @@ def create_feed(user_id, login, markets):
                 ''' % (','.join(market_ids), item[0]))
                 for offer in result:
                     link = offer[3]
-                    if any(market_id in ['21D9F499-29B8-4BCD-918E-FE1B7997C33D'] for market_id in market_ids):
+                    if any([market_id.replace("'", "") in prom_market_id for market_id in market_ids]):
                         link = prom(link)
                     link = url(link)
                     lot = HashDict({
