@@ -6,6 +6,7 @@ import time
 from collections import defaultdict
 from datetime import datetime
 from shutil import move
+from urllib.parse import urlparse, parse_qsl, urlunparse, urlencode, quote_plus
 
 import redis
 from pyramid_celery import celery_app as app
@@ -143,6 +144,15 @@ def check_feed():
     print('STOP RECREATE FEED')
 
 
+def prom(link):
+    url_parts = list(urlparse(link))
+    url_parts[2] = url_parts[2].replace('click_ad_yottos', 'click_ad_yottos_top100')
+    query = dict(parse_qsl(url_parts[4]))
+    query.update({'utm_source': 'yottos_top100'})
+    url_parts[4] = urlencode(query, quote_via=quote_plus)
+    return urlunparse(url_parts)
+
+
 @app.task(ignore_result=True)
 def create_feed(user_id, login, markets):
     print('START CREATE FEED %s' % user_id)
@@ -186,12 +196,16 @@ def create_feed(user_id, login, markets):
                   and RetargetingID= '%s'
                 ''' % (','.join(market_ids), item[0]))
                 for offer in result:
+                    link = offer[3]
+                    if market_id in ['21D9F499-29B8-4BCD-918E-FE1B7997C33D']:
+                        link = prom(link)
+                    link = url(link)
                     lot = HashDict({
                         'offer_id': item[0],
                         'name': text_normalize(offer[0]),
                         'description': text_normalize(offer[1]),
                         'price': price(offer[2]),
-                        'url': url(offer[3]),
+                        'url': link,
                         'picture': image_link(offer[4]),
                         'logo': image_link(offer[5]),
                         'sale_count': item[1]
